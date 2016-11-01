@@ -1,8 +1,8 @@
 val baseSettings = Seq(
   scalaVersion := "2.11.8",
-  crossScalaVersions := Seq("2.10.6", "2.11.8", "2.12.0-RC2"),
-  version := "0.2.0",
-  name := "sourcecode"  ,
+  crossScalaVersions := Seq("2.10.6", "2.11.8", "2.12.0"),
+  version := "0.2.0-scastie",
+  name := "sourcecode",
   organization := "com.lihaoyi",
   publishTo := Some("releases"  at "https://oss.sonatype.org/service/local/staging/deploy/maven2"),
   scmInfo := Some(ScmInfo(
@@ -35,15 +35,25 @@ def macroDependencies(version: String, binaryVersion: String) = {
   ) ++ quasiquotes
 }
 
-lazy val sourcecode = crossProject.settings(baseSettings).settings(
-  libraryDependencies ++= macroDependencies(scalaVersion.value, scalaBinaryVersion.value),
-  unmanagedSourceDirectories in Compile ++= {
-    if (Set("2.11", "2.12.0-RC2").contains(scalaBinaryVersion.value)) 
-      Seq(baseDirectory.value / ".." / "shared" / "src" / "main" / "scala-2.11_2.12")
-    else
-      Seq()
-  }
-)
+lazy val sourcecode = crossProject2
+  .settings(baseSettings)
+  .settings(
+    libraryDependencies ++= macroDependencies(scalaVersion.value, scalaBinaryVersion.value),
+    unmanagedSourceDirectories in Compile ++= {
+      if (Set("2.11", "2.12").contains(scalaBinaryVersion.value)) 
+        Seq(baseDirectory.value / ".." / "shared" / "src" / "main" / "scala-2.11_2.12")
+      else
+        Seq()
+    }
+  )
+  .nativeSettings(
+    name := "sourcecode-native",
+    nativeClangOptions := Stream(
+      "-I/nix/store/rxvzdlp5x3r60b02fk95v404y3mhs2in-boehm-gc-7.2f-dev/include",
+      "-L/nix/store/bw1p8rairfwv2yif2g1cc0yg8hv25mnl-boehm-gc-7.2f/lib"
+    )
+  )
 
 lazy val js = sourcecode.js
 lazy val jvm = sourcecode.jvm
+lazy val native = sourcecode.native
